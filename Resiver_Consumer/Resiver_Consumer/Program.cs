@@ -13,20 +13,28 @@ namespace Resiver_Consumer
             var factory = new ConnectionFactory();
             factory.Uri = new Uri("amqp://guest:guest@localhost:5672");
             var connection = factory.CreateConnection();
-            var chanel = connection.CreateModel();
+            var channel = connection.CreateModel();
             // because this queue is created in sender , it is not necessary to difine it 
-            // chanel.QueueDeclare("myQueue1", false, false, false, null);
-            var consumer = new EventingBasicConsumer(chanel);
-            consumer.Received += (model, eventArg) =>
+            channel.QueueDeclare("myQueue1", false, false, false, null);
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += (sender, eventArg) =>
             {
                 var body = eventArg.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
+
+                Random random = new Random();
+                int sleep = random.Next(0, 3) * 1000;
+
+                Console.WriteLine($"sleep:{sleep} delivery tags {eventArg.DeliveryTag}");
+                Thread.Sleep(sleep);
                 Console.WriteLine("Resived Message =>:" + message);
-                Thread.Sleep(1);
+                //Thread.Sleep(1);
+
+               // channel.BasicAck(eventArg.DeliveryTag, true);
             };
 
-            chanel.BasicConsume("myQueue1", true, consumer);
-            chanel.Close();
+            channel.BasicConsume("myQueue1", false, consumer);
+            channel.Close();
             connection.Close();
 
             Console.ReadLine();
